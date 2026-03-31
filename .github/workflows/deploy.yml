@@ -3,15 +3,10 @@ name: Deploy
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-    types: [closed]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true || github.event_name == 'push'
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
@@ -55,7 +50,7 @@ jobs:
               -e MQTT_HOST=${{ secrets.MQTT_HOST }} \
               -e MQTT_PORT=1883 \
               -e MQTT_USER=${{ secrets.MQTT_USER }} \
-              -e MQTT_PASS=${{ secrets.MQTT_PWD }} \
+              -e MQTT_PWD=${{ secrets.MQTT_PWD }} \
               "$IMAGE_NAME":latest
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
