@@ -53,6 +53,7 @@ class EdgeServerCreate(BaseModel):
     server_status: ServerStatus
     capture_duration_ms: int
     timezone: str
+    installation_place: Optional[str] = None
 
 
 class EdgeServerRead(BaseModel):
@@ -64,5 +65,6 @@ class EdgeServerRead(BaseModel):
     server_status: ServerStatus
     capture_duration_ms: int
     timezone: str
+    installation_place: Optional[str] = None
     created_at: datetime
     updated_at: datetime

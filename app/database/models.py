@@ -50,3 +50,4 @@ class EdgeServer(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     timezone = Column(String(20))
+    installation_place = Column(String(50), nullable=True)
