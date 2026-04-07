@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.health import router as health_router
-from app.api.edge_server import router as edge_server_router
 from app.database.database import router as database_router
 from app.mqtt.client import connect as mqtt_connect, create_client as mqtt_create_client
 from app.mqtt.subscriber import subscribe

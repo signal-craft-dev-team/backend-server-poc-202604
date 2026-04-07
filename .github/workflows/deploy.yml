@@ -51,6 +51,9 @@ jobs:
               -e MQTT_PORT=1883 \
               -e MQTT_USER=${{ secrets.MQTT_USER }} \
               -e MQTT_PWD=${{ secrets.MQTT_PWD }} \
+              -e DB_USER=${{ secrets.DB_USER }} \
+              -e DB_PWD=${{ secrets.DB_PWD }} \
+              -e DB_NAME=${{ secrets.DB_NAME }} \
               "$IMAGE_NAME":latest
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
