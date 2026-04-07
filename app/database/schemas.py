@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from app.database.models import ServerStatus
+from app.database.models import ServerStatus, SensorType
 
 
 # ── Customer ──────────────────────────────────────────────
@@ -66,5 +66,26 @@ class EdgeServerRead(BaseModel):
     capture_duration_ms: int
     timezone: str
     installation_place: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+# ── EdgeSensor ────────────────────────────────────────────
+
+class EdgeSensorCreate(BaseModel):
+    server_id: str
+    device_name: str
+    sensor_type: SensorType
+    sensor_position: Optional[str] = None
+
+
+class EdgeSensorRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    edge_server_id: UUID
+    device_name: str
+    sensor_type: SensorType
+    sensor_position: Optional[str] = None
     created_at: datetime
     updated_at: datetime
