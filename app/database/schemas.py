@@ -48,6 +48,7 @@ class PlaceRead(BaseModel):
 # ── EdgeServer ────────────────────────────────────────────
 
 class EdgeServerCreate(BaseModel):
+    server_id: str
     place_id: Optional[UUID] = None
     server_status: ServerStatus
     capture_duration_ms: int
@@ -58,6 +59,7 @@ class EdgeServerRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    server_id: str
     place_id: Optional[UUID] = None
     server_status: ServerStatus
     capture_duration_ms: int

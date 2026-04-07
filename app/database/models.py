@@ -43,6 +43,7 @@ class EdgeServer(Base):
     __table_args__ = {"schema": "service"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    server_id = Column(String(100), unique=True, nullable=False)
     place_id = Column(UUID(as_uuid=True), ForeignKey("service.place.id"), nullable=True)
     server_status = Column(Enum(ServerStatus, name="serverstatus"))
     capture_duration_ms = Column(Integer)

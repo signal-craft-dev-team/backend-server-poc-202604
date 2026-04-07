@@ -78,8 +78,8 @@ async def create_edge_server(data: EdgeServerCreate, db: AsyncSession = Depends(
 
 
 @router.get("/edge-servers/{server_id}", response_model=EdgeServerRead)
-async def read_edge_server(server_id: UUID, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(EdgeServer).where(EdgeServer.id == server_id))
+async def read_edge_server(server_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(EdgeServer).where(EdgeServer.server_id == server_id))
     server = result.scalar_one_or_none()
     if not server:
         raise HTTPException(status_code=404, detail="EdgeServer not found")
