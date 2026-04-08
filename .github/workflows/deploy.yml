@@ -54,6 +54,8 @@ jobs:
               -e DB_USER=${{ secrets.DB_USER }} \
               -e DB_PWD=${{ secrets.DB_PWD }} \
               -e DB_NAME=${{ secrets.DB_NAME }} \
+              -e GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }} \
+              -e GCS_SIGNED_URL_EXPIRY_MINUTES=5 \
               "$IMAGE_NAME":latest
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}

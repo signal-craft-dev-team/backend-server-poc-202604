@@ -10,6 +10,7 @@ from app.mqtt.client import connect as mqtt_connect, create_client as mqtt_creat
 from app.mqtt.subscriber import subscribe
 from app.mqtt.state import set_client
 from app.mqtt.ack_manager import ack_manager
+from app.mqtt.upload_manager import upload_manager
 from app.database.client import connect as db_connect, create_connector, disconnect as db_disconnect
 
 mqtt_client = mqtt_create_client()
@@ -20,9 +21,12 @@ async def lifespan(app: FastAPI):
     mqtt_connect(mqtt_client)
     subscribe(mqtt_client, topic="signalcraft/control_server/+/ack", qos=1)
     subscribe(mqtt_client, topic="signalcraft/upload_audio/+", qos=1)
+    subscribe(mqtt_client, topic="signalcraft/complete_upload/+", qos=1)
     mqtt_client.loop_start()
     set_client(mqtt_client)
-    ack_manager.set_loop(asyncio.get_event_loop())
+    loop = asyncio.get_event_loop()
+    ack_manager.set_loop(loop)
+    upload_manager.set_loop(loop)
 
     # DB — lifespan 안에서 생성해야 이벤트 루프 일치
     db_connector = await create_connector()

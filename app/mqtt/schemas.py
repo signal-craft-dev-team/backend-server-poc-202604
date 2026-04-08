@@ -1,4 +1,4 @@
-"""Pydantic schemas for MQTT control messages."""
+"""Pydantic schemas for MQTT messages."""
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -59,4 +59,45 @@ class ControlAckResponse(BaseModel):
     target_sensor_id: Optional[str] = None
     status: AckStatus
     error: Optional[str] = None
+    timestamp: datetime
+
+
+# ---------- UPLOAD_AUDIO / SEND_URL / COMPLETE_UPLOAD ----------
+
+class UploadAudioMessage(BaseModel):
+    """Edge → Cloud: signalcraft/upload_audio/{server_id}"""
+    server_id: str
+    sensor_id: str
+    file_name: str
+    recorded_at: datetime
+    duration_ms: int
+    file_size_bytes: int
+    timestamp: datetime
+
+
+class SendUrlMessage(BaseModel):
+    """Cloud → Edge: signalcraft/send_url/{server_id}"""
+    server_id: str
+    file_name: str
+    signed_url: str
+    expires_at: datetime
+    timestamp: datetime
+
+
+class CompleteUploadMessage(BaseModel):
+    """Edge → Cloud: signalcraft/complete_upload/{server_id}"""
+    server_id: str
+    sensor_id: str
+    file_name: str
+    recorded_at: datetime
+    duration_ms: int
+    file_size_bytes: int
+    timestamp: datetime
+
+
+class RetryUploadMessage(BaseModel):
+    """Cloud → Edge: signalcraft/retry_upload/{server_id}"""
+    server_id: str
+    file_name: str
+    reason: str
     timestamp: datetime
