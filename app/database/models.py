@@ -56,7 +56,10 @@ class EdgeServer(Base):
     server_id = Column(String(100), unique=True, nullable=False)
     place_id = Column(UUID(as_uuid=True), ForeignKey("service.place.id"), nullable=True)
     server_status = Column(Enum(ServerStatus, name="serverstatus"))
-    capture_duration_ms = Column(Integer)
+    capture_duration_ms = Column(Integer, nullable=True)
+    upload_interval_ms = Column(Integer, nullable=True)
+    active_hours_start = Column(String(5), nullable=True)   # "HH:MM"
+    active_hours_end = Column(String(5), nullable=True)     # "HH:MM"
     created_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True))
     timezone = Column(String(20))
