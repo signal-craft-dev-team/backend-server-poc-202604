@@ -119,6 +119,10 @@ async def handle_upload_audio(payload: dict) -> None:
         logger.error("[AudioUpload] MQTT client unavailable — cannot send SEND_URL")
         return
 
+    # 3. COMPLETE_UPLOAD 대기 큐를 publish 전에 등록 (race condition 방지)
+    #    publish 이후 등록하면 paho 스레드가 COMPLETE_UPLOAD를 먼저 수신할 수 있음
+    complete_queue = upload_manager.register(msg.file_name)
+
     send_url_msg = SendUrlMessage(
         server_id=msg.server_id,
         file_name=msg.file_name,
@@ -129,11 +133,9 @@ async def handle_upload_audio(payload: dict) -> None:
     try:
         publish(client, send_url_topic(msg.server_id), send_url_msg.model_dump_json())
     except Exception as exc:
+        upload_manager.unregister(msg.file_name)
         logger.error(f"[AudioUpload] SEND_URL publish failed | error={exc}")
         return
-
-    # 3. COMPLETE_UPLOAD 대기
-    complete_queue = upload_manager.register(msg.file_name)
     try:
         complete_payload = await asyncio.wait_for(
             complete_queue.get(), timeout=COMPLETE_UPLOAD_TIMEOUT_SEC
