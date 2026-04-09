@@ -29,3 +29,19 @@ def complete_upload_topic(server_id: str) -> str:
 def retry_upload_topic(server_id: str) -> str:
     """Cloud → Edge: 재업로드 요청."""
     return f"signalcraft/retry_upload/{server_id}"
+
+
+# ── CLOUD INBOUND (Edge → Cloud) ─────────────────────────────────────────────
+_CLOUD_BASE = "signalcraft/cloud"
+
+def abnormal_topic(server_id: str) -> str:
+    """Edge → Cloud: 비정상 이벤트 / 센서 오프라인."""
+    return f"{_CLOUD_BASE}/{server_id}/abnormal"
+
+def disk_alert_topic(server_id: str) -> str:
+    """Edge → Cloud: 디스크 용량 경고."""
+    return f"{_CLOUD_BASE}/{server_id}/disk_alert"
+
+def upload_failed_topic(server_id: str) -> str:
+    """Edge → Cloud: 엣지 측 업로드 실패 알림."""
+    return f"{_CLOUD_BASE}/{server_id}/upload_failed"

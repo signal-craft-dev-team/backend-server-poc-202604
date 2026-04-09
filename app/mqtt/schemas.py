@@ -101,3 +101,31 @@ class RetryUploadMessage(BaseModel):
     file_name: str
     reason: str
     timestamp: datetime
+
+
+# ---------- ABNORMAL / DISK_ALERT / UPLOAD_FAILED ----------
+
+class AbnormalMessage(BaseModel):
+    """Edge → Cloud: signalcraft/cloud/{server_id}/abnormal"""
+    server_id: str
+    sensor_id: Optional[str] = None
+    event_type: str                     # e.g. "ABNORMAL", "SENSOR_OFFLINE"
+    detail: Optional[str] = None
+    timestamp: datetime
+
+
+class DiskAlertMessage(BaseModel):
+    """Edge → Cloud: signalcraft/cloud/{server_id}/disk_alert"""
+    server_id: str
+    disk_usage_percent: float
+    threshold_percent: float
+    timestamp: datetime
+
+
+class UploadFailedMessage(BaseModel):
+    """Edge → Cloud: signalcraft/cloud/{server_id}/upload_failed"""
+    server_id: str
+    sensor_id: Optional[str] = None
+    file_name: Optional[str] = None
+    reason: str
+    timestamp: datetime

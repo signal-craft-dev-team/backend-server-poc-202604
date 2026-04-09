@@ -17,6 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.client import get_db
 from app.database.models import EdgeServer
+from app.log.models import ServerCommLog
+from app.log.upload_log import write_server_comm_log
 from app.mqtt.ack_manager import ack_manager
 from app.mqtt.publisher import publish
 from app.mqtt.schemas import (
@@ -60,7 +62,7 @@ async def _apply_ack_to_db(
         elif ack.command == ControlCommand.UPDATE_UPLOAD_SCHEDULE:
             if params.upload_interval_ms is not None:
                 server.upload_interval_ms = params.upload_interval_ms
-        
+
         elif ack.command == ControlCommand.UPDATE_ACTIVE_HOURS:
             if params.active_hours is not None:
                 server.active_hours_start = params.active_hours.start
@@ -126,10 +128,28 @@ async def control_server(
             detail="Failed to publish MQTT message",
         )
 
-    # 5. CONTROL_ACK 대기
+    # 5. CONTROL_SENT 로그
+    await write_server_comm_log(ServerCommLog(
+        server_id=request.server_id,
+        message_id=message.message_id,
+        command=request.command,
+        event_type="CONTROL_SENT",
+        latest_topic=topic,
+        timestamp=datetime.now(timezone.utc),
+    ))
+
+    # 6. CONTROL_ACK 대기
     try:
         ack_payload = await asyncio.wait_for(ack_queue.get(), timeout=ACK_TIMEOUT_SEC)
     except asyncio.TimeoutError:
+        await write_server_comm_log(ServerCommLog(
+            server_id=request.server_id,
+            message_id=message.message_id,
+            command=request.command,
+            event_type="ACK_TIMEOUT",
+            latest_topic=topic,
+            timestamp=datetime.now(timezone.utc),
+        ))
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail=f"No ACK received from edge server within {ACK_TIMEOUT_SEC}s",
@@ -139,7 +159,19 @@ async def control_server(
 
     ack = ControlAckResponse(**ack_payload)
 
-    # 6. APPLIED일 때만 DB 갱신
+    # 7. ACK_RECEIVED 로그
+    await write_server_comm_log(ServerCommLog(
+        server_id=ack.server_id,
+        message_id=ack.message_id,
+        command=ack.command,
+        event_type="ACK_RECEIVED",
+        status=ack.status,
+        error=ack.error,
+        latest_topic=topic,
+        timestamp=ack.timestamp,
+    ))
+
+    # 8. APPLIED일 때만 DB 갱신
     if ack.status == AckStatus.APPLIED:
         await _apply_ack_to_db(db, ack, request)
 
