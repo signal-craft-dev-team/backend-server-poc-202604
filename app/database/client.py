@@ -9,7 +9,7 @@ from google.cloud.sql.connector import Connector
 
 load_dotenv()
 
-INSTANCE_CONNECTION_NAME = "signal-craft-ver-260330:us-central1:signalcraft-sql"
+INSTANCE_CONNECTION_NAME = os.getenv("SQL_INSTANCE_CONNECTION_NAME")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PWD = os.getenv("DB_PWD")
 DB_NAME = os.getenv("DB_NAME", "postgres")

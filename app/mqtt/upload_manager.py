@@ -5,7 +5,7 @@ AckManager와 동일한 패턴 — paho 콜백 스레드에서 asyncio 루프로
 """
 import asyncio
 import logging
-from typing import Callable, Coroutine, Dict, Optional
+from typing import Coroutine, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
