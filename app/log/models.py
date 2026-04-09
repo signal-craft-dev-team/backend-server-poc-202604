@@ -72,7 +72,7 @@ class SensorCommLog(BaseModel):
       - "RETRY_REQUESTED"   : 재업로드 요청 발행
     """
     server_id: str
-    sensor_id: str
+    sensor_id: Optional[str] = None
     file_name: Optional[str] = None
     event_type: str
     status: Optional[str] = None

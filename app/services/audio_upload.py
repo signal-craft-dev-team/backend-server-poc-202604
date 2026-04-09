@@ -95,7 +95,7 @@ async def handle_upload_audio(payload: dict) -> None:
     )
     topic = send_url_topic(msg.server_id)
     try:
-        publish(client, topic, send_url_msg.model_dump_json())
+        await publish(client, topic, send_url_msg.model_dump_json())
     except Exception as exc:
         upload_manager.unregister(msg.file_name)
         logger.error(f"[AudioUpload] SEND_URL publish failed | error={exc}")
@@ -192,7 +192,7 @@ async def _handle_complete_timeout(msg: UploadAudioMessage, client) -> None:
         )
         retry_topic = retry_upload_topic(msg.server_id)
         try:
-            publish(client, retry_topic, retry_msg.model_dump_json())
+            await publish(client, retry_topic, retry_msg.model_dump_json())
             await write_sensor_comm_log(SensorCommLog(
                 server_id=msg.server_id,
                 sensor_id=msg.sensor_id,

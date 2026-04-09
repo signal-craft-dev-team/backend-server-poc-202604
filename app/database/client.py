@@ -47,5 +47,7 @@ async def disconnect(connector: Connector) -> None:
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    if _AsyncSessionLocal is None:
+        raise RuntimeError("DB session not initialized — connect() must be called at startup")
     async with _AsyncSessionLocal() as session:
         yield session

@@ -119,7 +119,7 @@ async def control_server(
 
     topic = control_topic(request.server_id)
     try:
-        publish(client, topic, message.model_dump_json())
+        await publish(client, topic, message.model_dump_json())
     except Exception as exc:
         ack_manager.unregister(message.message_id)
         logger.error(f"[MQTT] publish failed: {exc}")

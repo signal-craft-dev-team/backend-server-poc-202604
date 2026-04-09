@@ -99,7 +99,7 @@ def _route_abnormal(topic: str, payload_str: str) -> None:
         msg = AbnormalMessage(**payload)
         upload_manager.schedule(write_sensor_comm_log(SensorCommLog(
             server_id=msg.server_id,
-            sensor_id=msg.sensor_id or "",
+            sensor_id=msg.sensor_id,
             event_type=msg.event_type,
             status="ABNORMAL",
             detail={"detail": msg.detail} if msg.detail else None,
@@ -118,7 +118,7 @@ def _route_disk_alert(topic: str, payload_str: str) -> None:
         msg = DiskAlertMessage(**payload)
         upload_manager.schedule(write_sensor_comm_log(SensorCommLog(
             server_id=msg.server_id,
-            sensor_id="",
+            sensor_id=None,
             event_type="DISK_ALERT",
             status="WARNING",
             detail={
