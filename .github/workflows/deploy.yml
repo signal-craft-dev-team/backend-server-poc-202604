@@ -57,7 +57,7 @@ jobs:
               -e GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }} \
               -e GCS_SIGNED_URL_EXPIRY_MINUTES=5 \
               -e SQL_INSTANCE_CONNECTION_NAME=${{ secrets.SQL_INSTANCE_CONNECTION_NAME }} \
-              -e MONGODB_URI=${{ secrets.MONGODB_URI }} \
+              -e MONGODB_URI="${{ secrets.MONGODB_URI }}" \
               -e MONGODB_DB_NAME=${{ secrets.MONGODB_DB_NAME }} \
               "$IMAGE_NAME":latest
         env:
