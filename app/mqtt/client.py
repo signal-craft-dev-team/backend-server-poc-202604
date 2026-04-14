@@ -49,6 +49,8 @@ def create_client() -> mqtt.Client:
         client.username_pw_set(MQTT_USER, MQTT_PWD)
     client.on_connect = _on_connect
     client.on_disconnect = _on_disconnect
+    # 연결 끊김 시 1초 후 재시도, 최대 30초 간격으로 지수 백오프
+    client.reconnect_delay_set(min_delay=1, max_delay=30)
     return client
 
 
