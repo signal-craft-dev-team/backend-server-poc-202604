@@ -38,6 +38,8 @@ def connect(connector: Connector) -> None:
     engine = create_async_engine(
         "postgresql+asyncpg://",
         async_creator=_get_conn,
+        pool_pre_ping=True,
+        pool_recycle=1800,
     )
     _AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
