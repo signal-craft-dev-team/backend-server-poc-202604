@@ -1,0 +1,245 @@
+# MQTT Topic Contracts
+
+**Branch**: `001-backend-2026-04-15` | **Date**: 2026-04-15
+
+모든 MQTT 토픽은 클라우드 브로커를 경유한다.
+README.md 시나리오 테이블의 각 MQTT 단계에 1:1 대응한다.
+
+## 토픽 네임스페이스 규칙
+
+```
+signalcraft/edge/{edge_server_id}/...
+```
+
+- `{edge_server_id}`: 엣지 서버의 device_id (URL-safe string)
+- `{sensor_id}`: 엣지 센서의 device_id
+
+---
+
+## 신규 설치 (NEW)
+
+### NEW-001 — 엣지 서버 등록 요청
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/register` |
+| 방향 | 엣지 서버 → **백엔드** (Subscribe) |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "device_id": "string",
+  "location": "string (optional)"
+}
+```
+
+---
+
+### NEW-002 — 엣지 서버 등록 결과 전달
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/register/result` |
+| 방향 | **백엔드** (Publish) → 엣지 서버 |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "status": "success | failed",
+  "message": "string (optional)"
+}
+```
+
+---
+
+### NEW-004 — 엣지 센서 등록 요청 (중계)
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/sensor/{sensor_id}/register` |
+| 방향 | 엣지 서버 → **백엔드** (Subscribe) |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "sensor_device_id": "string",
+  "edge_server_id": "string"
+}
+```
+
+---
+
+### NEW-005 — 엣지 센서 등록 결과 전달
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/sensor/{sensor_id}/register/result` |
+| 방향 | **백엔드** (Publish) → 엣지 서버 |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "status": "success | failed",
+  "sensor_device_id": "string",
+  "message": "string (optional)"
+}
+```
+
+---
+
+## 오디오 수집 (AUDIO)
+
+### AUDIO-005 — 오디오 데이터 업로드 요청
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/audio/upload/request` |
+| 방향 | 엣지 서버 → **백엔드** (Subscribe) |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "edge_server_id": "string",
+  "file_name": "string (optional, 백엔드가 생성 가능)"
+}
+```
+
+---
+
+### AUDIO-007 — Presigned URL 전달
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/audio/upload/url` |
+| 방향 | **백엔드** (Publish) → 엣지 서버 |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "presigned_url": "string (PUT URL)",
+  "gcs_path": "string",
+  "expires_at": "ISO8601"
+}
+```
+
+---
+
+### AUDIO-010 — 전체 업로드 결과 전달
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/audio/upload/complete` |
+| 방향 | 엣지 서버 → **백엔드** (Subscribe) |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "gcs_path": "string",
+  "status": "success | failed",
+  "message": "string (optional)"
+}
+```
+
+---
+
+## 파라미터 제어 — 서버 (CTRL-SERVER)
+
+### CTRL-SERVER-001 — 파라미터 값 송신
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/ctrl/server` |
+| 방향 | **백엔드** (Publish) → 엣지 서버 |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "parameter_name": "string",
+  "parameter_value": "any"
+}
+```
+
+---
+
+### CTRL-SERVER-002 — 송신 결과 전달
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/ctrl/server/result` |
+| 방향 | 엣지 서버 → **백엔드** (Subscribe) |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "parameter_name": "string",
+  "status": "success | failed",
+  "message": "string (optional)"
+}
+```
+
+---
+
+## 파라미터 제어 — 센서 (CTRL-SENSOR)
+
+### CTRL-SENSOR-001 — 파라미터 값 송신 (백엔드 → 엣지 서버)
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/ctrl/sensor/{sensor_id}` |
+| 방향 | **백엔드** (Publish) → 엣지 서버 |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "sensor_device_id": "string",
+  "parameter_name": "string",
+  "parameter_value": "any"
+}
+```
+
+---
+
+### CTRL-SENSOR-004 — 최종 결과 전달 (엣지 서버 → 백엔드)
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/edge/{edge_server_id}/ctrl/sensor/{sensor_id}/result` |
+| 방향 | 엣지 서버 → **백엔드** (Subscribe) |
+| QoS | 1 |
+
+**Payload**:
+```json
+{
+  "sensor_device_id": "string",
+  "parameter_name": "string",
+  "status": "success | failed",
+  "message": "string (optional)"
+}
+```
+
+---
+
+## 백엔드 구독 토픽 요약
+
+백엔드가 클라우드 브로커에 Subscribe하는 토픽 목록:
+
+```
+signalcraft/edge/+/register
+signalcraft/edge/+/sensor/+/register
+signalcraft/edge/+/audio/upload/request
+signalcraft/edge/+/audio/upload/complete
+signalcraft/edge/+/ctrl/server/result
+signalcraft/edge/+/ctrl/sensor/+/result
+```
+
+(`+`는 MQTT 단일 레벨 와일드카드)
