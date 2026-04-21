@@ -47,9 +47,9 @@ Cloud SQL EdgeServer 테이블에 레코드 존재 확인
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] `app/models/edge_server.py` 생성 — `EdgeServer` SQLAlchemy async 모델 (id UUID PK, device_id UNIQUE, location, status ENUM, registered_at, last_seen_at)
-- [ ] T009 [P] [US1] `app/models/edge_sensor.py` 생성 — `EdgeSensor` SQLAlchemy async 모델 (id UUID PK, device_id UNIQUE, edge_server_id FK, status ENUM, registered_at)
-- [ ] T010 [P] [US1] `app/models/schemas.py` 생성 — NEW 시나리오 Pydantic 스키마 (NEW-001 요청, NEW-002 결과, NEW-004 요청, NEW-005 결과 페이로드)
+- [x] T008 [P] [US1] `app/models/edge_server.py` 생성 — `EdgeServer` SQLAlchemy async 모델 (id UUID PK, device_id UNIQUE, location, status ENUM, registered_at, last_seen_at)
+- [x] T009 [P] [US1] `app/models/edge_sensor.py` 생성 — `EdgeSensor` SQLAlchemy async 모델 (id UUID PK, device_id UNIQUE, edge_server_id FK, status ENUM, registered_at)
+- [x] T010 [P] [US1] `app/models/schemas.py` 생성 — NEW 시나리오 Pydantic 스키마 (NEW-001 요청, NEW-002 결과, NEW-004 요청, NEW-005 결과 페이로드)
 - [ ] T011 [US1] `app/db/sql.py` 업데이트 — `EdgeServer`, `EdgeSensor` 테이블 `create_all` (lifespan startup에서 호출)
 - [ ] T012 [US1] `app/services/registration.py` 생성 — `register_edge_server(device_id, location)`, `register_edge_sensor(sensor_device_id, edge_server_id)` 구현 (중복 등록 시 기존 레코드 반환)
 - [ ] T013 [US1] `app/mqtt/handlers.py` 생성 — `handle_edge_server_register(message)`: payload 파싱 → service 호출 → 결과 MQTT publish (NEW-002), `handle_edge_sensor_register(message)`: payload 파싱 → service 호출 → 결과 publish (NEW-005)
