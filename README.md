@@ -53,3 +53,50 @@
 | CTRL-SENSOR-002 | 센서로 값 송신 | MQTT | 엣지 서버 | 엣지 센서 | X |
 | CTRL-SENSOR-003 | 송신 결과 전달 | MQTT | 엣지 센서 | 엣지 서버 | X |
 | CTRL-SENSOR-004 | 송신 결과 전달 | MQTT | 엣지 서버 | 백엔드 | X |
+
+## MQTT 토픽 정리
+
+## 기본구조
+```
+signalcraft/{토픽내용}/{송신위치}/{수신위치}
+```
+---
+예시<br>
+| 방향 | 토픽 예시 |
+|---|---|
+|엣지 센서 -> 엣지 서버| signalcraft/status_check/edge-sensor-1/edge-server-1
+|엣지 서버 -> 엣지 센서| signalcraft/status_check/edge-server-1/edge-sensor-1
+|클라우드 -> 엣지 서버| signalcraft/status_check/cloud/edge-server-1
+|엣지 서버 -> 클라우드| signalcraft/status_check/edge-server-1/cloud
+
+## 엣지 서버 브로커 토픽
+
+| 시나리오 | 방향 | 토픽 | QoS |
+|---|---|---|---|
+| NEW-003 센서 등록 요청 | 엣지 센서 → 엣지 서버 | `signalcraft/sensor_init/{sensor_id}/{server_id}` | 1 |
+| NEW-006 센서 등록 결과 수신 | 엣지 서버 → 엣지 센서 | `signalcraft/register_sensor/{server_id}/{sensor_id}` | 1 |
+| AUDIO-002 오디오 데이터 요청 | 엣지 서버 → 엣지 센서 | `signalcraft/request_audio/{server_id}/{sensor_id}` | 1 |
+| CTRL-SENSOR-002 센서로 파라미터 송신 | 엣지 서버 → 엣지 센서 | `signalcraft/control_parameters/{server_id}/{sensor_id}` | 1 |
+| CTRL-SENSOR-003 센서 제어 결과 전달 | 엣지 센서 → 엣지 서버 | `signalcraft/result_parameters/{sensor_id}/{server_id}` | 1 |
+
+> AUDIO-003/004 (오디오 데이터 송수신)는 HTTP로 처리 — MQTT 토픽 없음
+
+---
+
+## 클라우드 브로커 토픽
+
+| 시나리오 | 방향 | 토픽 | QoS |
+|---|---|---|---|
+| NEW-001 엣지 서버 등록 요청 | 엣지 서버 → 백엔드 | `signalcraft/server_init/{server_id}/cloud` | 1 |
+| NEW-002 엣지 서버 등록 결과 전달 | 백엔드 → 엣지 서버 | `signalcraft/register_server/cloud/{server_id}` | 1 |
+| NEW-004 엣지 센서 등록 요청 | 엣지 서버 → 백엔드 | `signalcraft/forward_sensor_init/{server_id}/cloud` | 1 |
+| NEW-005 엣지 센서 등록 결과 전달 | 백엔드 → 엣지 서버 | `signalcraft/register_sensor/cloud/{server_id}` | 1 |
+| AUDIO-005 오디오 업로드 요청 | 엣지 서버 → 백엔드 | `signalcraft/request_upload_audio/{server_id}/cloud` | 1 |
+| AUDIO-007 Presigned URL 전달 | 백엔드 → 엣지 서버 | `signalcraft/upload_audio_url/cloud/{server_id}` | 1 |
+| AUDIO-010 전체 업로드 결과 전달 | 엣지 서버 → 백엔드 | `signalcraft/upload_result/{server_id}/cloud` | 1 |
+| CTRL-SERVER-001 서버 파라미터 송신 | 백엔드 → 엣지 서버 | `signalcraft/control_parameters_server/cloud/{server_id}` | 1 |
+| CTRL-SERVER-002 서버 제어 결과 전달 | 엣지 서버 → 백엔드 | `signalcraft/result_parameters_server/{server_id}/cloud` | 1 |
+| CTRL-SENSOR-001 센서 파라미터 송신 | 백엔드 → 엣지 서버 | `signalcraft/control_parameters_sensor/cloud/{server_id}` | 1 |
+| CTRL-SENSOR-004 센서 제어 결과 전달 | 엣지 서버 → 백엔드 | `signalcraft/result_parameters_sensor/{server_id}/cloud` | 1 |
+
+---
