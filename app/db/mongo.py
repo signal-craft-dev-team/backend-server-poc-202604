@@ -85,3 +85,34 @@ async def insert_sensor_status_log(
         "timestamp": kst_now(),
     }
     await get_db()["sensor_status_logs"].insert_one(doc)
+
+
+async def insert_audio_upload_log(server_id: str, gcs_path: str) -> None:
+    doc = {
+        "server_id": server_id,
+        "gcs_path": gcs_path,
+        "status": "pending",
+        "sensor_map": [],
+        "message": None,
+        "presigned_url_issued_at": kst_now(),
+        "upload_completed_at": None,
+        "timestamp": kst_now(),
+    }
+    await get_db()["audio_upload_logs"].insert_one(doc)
+
+
+async def update_audio_upload_log(
+    gcs_path: str,
+    status: str,
+    sensor_map: list[str],
+    message: str | None = None,
+) -> None:
+    await get_db()["audio_upload_logs"].update_one(
+        {"gcs_path": gcs_path},
+        {"$set": {
+            "status": status,
+            "sensor_map": sensor_map,
+            "message": message,
+            "upload_completed_at": kst_now(),
+        }},
+    )

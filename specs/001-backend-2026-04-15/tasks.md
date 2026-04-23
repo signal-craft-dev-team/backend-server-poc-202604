@@ -170,6 +170,82 @@ MongoDB `ctrl_result_logs`에 레코드 확인
 
 ---
 
+## Phase 7: 오디오 수집 (AUDIO-005 → AUDIO-007 → AUDIO-010)
+
+**Goal**: 엣지 서버의 오디오 업로드 요청에 GCS Presigned URL을 발급하고, 업로드 완료 결과를 MongoDB에 기록한다. 가동 시간 중 업로드가 3회 이상 누락되면 이상 감지 로그를 남긴다.
+
+**페이로드 설계**:
+- AUDIO-005: 페이로드 없음 (server_id는 토픽에서 추출)
+- AUDIO-007: `{ presigned_url, gcs_path, expires_at }`
+- AUDIO-010: `{ gcs_path, status, message?, sensor_map: [] }`
+
+**흐름**:
+```
+[엣지] PUBLISH request_upload_audio/{server_id}/cloud (payload 없음)
+  → handle_audio_upload_request
+      → [이상 감지] 마지막 success 업로드 시각 체크
+          → active_hours 내 + 경과 > 3 × upload_interval_ms → error_logs 기록
+      → GCS 경로 생성: {server_id}/YYYY-MM-DD/YYYYMMDD_HHMMSS.wav
+      → GCS Presigned URL (PUT) 발급
+      → MongoDB audio_records pending 저장
+      → publish_upload_audio_url (AUDIO-007)
+
+[엣지] GCS PUT 업로드
+
+[엣지] PUBLISH upload_result/{server_id}/cloud
+  → handle_upload_result
+      → MongoDB audio_records gcs_path 기준 업데이트
+          (status, sensor_map, message, upload_completed_at)
+      → 실패 시 error_logs 기록
+```
+
+**MongoDB `audio_records` 스키마**:
+```json
+{
+  "server_id": "...",
+  "gcs_path": "{server_id}/YYYY-MM-DD/YYYYMMDD_HHMMSS.wav",
+  "status": "pending | success | failed",
+  "sensor_map": ["mic-001", "mic-002"],
+  "message": null,
+  "presigned_url_issued_at": "KST ISO8601",
+  "upload_completed_at": null,
+  "timestamp": "KST ISO8601"
+}
+```
+
+**Checkpoint**:
+1. MQTTX로 `signalcraft/request_upload_audio/test-server-0001/cloud` 발행 →
+   `signalcraft/upload_audio_url/cloud/test-server-0001`에서 presigned_url 수신 확인
+2. presigned_url로 PUT 업로드 성공 확인
+3. MQTTX로 `signalcraft/upload_result/test-server-0001/cloud` 발행 →
+   MongoDB `audio_records`에 success 레코드 확인
+
+### Implementation
+
+- [x] T701 [P] `app/storage/gcs.py` 생성 — `generate_presigned_url(gcs_path)`: `google-cloud-storage` 라이브러리로 GCS PUT Presigned URL 생성, 유효시간 `settings.gcs_signed_url_expiry_minutes`, `(presigned_url, expires_at)` 반환
+- [x] T702 [P] `app/db/mongo.py` 업데이트 — 두 헬퍼 추가:
+  - `insert_audio_record(server_id, gcs_path)`: `audio_records` 컬렉션에 `{server_id, gcs_path, status:"pending", presigned_url_issued_at, timestamp}` 삽입
+  - `update_audio_record(gcs_path, status, sensor_map, message)`: `gcs_path` 기준으로 `{status, sensor_map, message, upload_completed_at}` 업데이트
+- [x] T703 [P] `app/models/schemas.py` 업데이트 — AUDIO 스키마 3개 추가:
+  - `AudioUploadRequest`: 필드 없음 (빈 payload 허용용)
+  - `AudioUrlPayload`: `presigned_url: str`, `gcs_path: str`, `expires_at: str`
+  - `AudioUploadResult`: `gcs_path: str`, `status: str`, `message: str | None`, `sensor_map: list[str]`
+- [x] T704 `app/services/audio.py` 생성 — 두 함수:
+  - `issue_presigned_url(server_id)`: GCS 경로 생성(`{server_id}/날짜/타임스탬프.wav`) → `generate_presigned_url()` → `insert_audio_record()` → `(gcs_path, presigned_url, expires_at)` 반환
+  - `check_upload_anomaly(server_id)`: SQL에서 EdgeServer 조회(upload_interval_ms, active_hours) → MongoDB에서 마지막 success 레코드 조회 → active_hours 내 + 경과 > 3 × upload_interval_ms → `True` 반환
+  - `record_upload_result(gcs_path, status, sensor_map, message)`: `update_audio_record()` 호출
+- [x] T705 `app/mqtt/subscribe.py` 업데이트 — `handle_audio_upload_request` 구현:
+  1. `parts[2]`에서 `server_id_str` 추출
+  2. `check_upload_anomaly(server_id_str)` → `True`면 `error_logs` 기록
+  3. try: `issue_presigned_url(server_id_str)` → 실패 시 `error_logs` + return
+  4. try: `publish_upload_audio_url(server_id_str, {presigned_url, gcs_path, expires_at})` → 실패 시 warning
+- [x] T706 `app/mqtt/subscribe.py` 업데이트 — `handle_upload_result` 구현:
+  1. `parts[2]`에서 `server_id_str` 추출, payload → `AudioUploadResult` 파싱
+  2. `record_upload_result(gcs_path, status, sensor_map, message)` 호출
+  3. 실패(`status == "failed"`) 시 `error_logs` 기록
+
+---
+
 ## Phase N: Polish & Cross-Cutting Concerns
 
 **Purpose**: 운영 및 개발 환경 완성도 향상
