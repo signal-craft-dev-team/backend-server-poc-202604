@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from sqlalchemy import text
 
+from app.api.web_api import router as web_router
 from app.db import mongo, sql
 from app.mqtt import client as mqtt_client
 from app.mqtt.topics import ALL_SUBSCRIBE_TOPICS
@@ -62,6 +63,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(web_router)
+
 
 @app.get("/health")
 async def health_check() -> JSONResponse:
@@ -93,3 +96,22 @@ async def health_check() -> JSONResponse:
             "mongodb": mongo_ok,
         },
     )
+
+# 추후 테스트 통과되면 모두 삭제(혹은 주석 처리)예정
+@app.get("/mqtt/topic-publish-test", tags=["TEST"])
+async def mqtt_topic_publish_test() -> JSONResponse:
+    """MQTT 토픽 발행 테스트 엔드포인트"""
+    test_topic = "signalcraft/register_server/cloud/test-server-0002"
+    test_message = {"message": "Hello MQTT!"}
+    await mqtt_client.publish(test_topic, test_message)
+    return JSONResponse(content={"status": "published", "topic": test_topic, "message": test_message})
+
+@app.get("/db/mongo-error-test", tags=["TEST"])
+async def db_mongo_error_test() -> JSONResponse:
+    """MongoDB 에러 테스트 엔드포인트"""
+    try:
+        # 존재하지 않는 컬렉션에 접근하여 에러 유발
+        await mongo.insert_error_log(event="test_error", server_id="test-server-0001", error="This is a test error", attempts=1)
+        return JSONResponse(content={"status": "success"})
+    except Exception as e:
+        return JSONResponse(content={"status": "error logged", "error": str(e)})

@@ -1,27 +1,27 @@
 # ─── 구독 토픽 (백엔드 Subscribe) ────────────────────────────────────────────
 # + : 단일 레벨 와일드카드
 
-SUBSCRIBE_EDGE_SERVER_REGISTER   = "signalcraft/edge/+/register"
-SUBSCRIBE_EDGE_SENSOR_REGISTER   = "signalcraft/edge/+/sensor/+/register"
-SUBSCRIBE_AUDIO_UPLOAD_REQUEST   = "signalcraft/edge/+/audio/upload/request"
-SUBSCRIBE_AUDIO_UPLOAD_COMPLETE  = "signalcraft/edge/+/audio/upload/complete"
-SUBSCRIBE_CTRL_SERVER_RESULT     = "signalcraft/edge/+/ctrl/server/result"
-SUBSCRIBE_CTRL_SENSOR_RESULT     = "signalcraft/edge/+/ctrl/sensor/+/result"
+SUBSCRIBE_SERVER_INIT                  = "signalcraft/server_init/+/cloud"
+SUBSCRIBE_FORWARD_SENSOR_INIT          = "signalcraft/forward_sensor_init/+/cloud"
+SUBSCRIBE_REQUEST_UPLOAD_AUDIO         = "signalcraft/request_upload_audio/+/cloud"
+SUBSCRIBE_UPLOAD_RESULT                = "signalcraft/upload_result/+/cloud"
+SUBSCRIBE_RESULT_PARAMETERS_SERVER     = "signalcraft/result_parameters_server/+/cloud"
+SUBSCRIBE_RESULT_PARAMETERS_SENSOR     = "signalcraft/result_parameters_sensor/+/cloud"
 
 ALL_SUBSCRIBE_TOPICS = [
-    SUBSCRIBE_EDGE_SERVER_REGISTER,
-    SUBSCRIBE_EDGE_SENSOR_REGISTER,
-    SUBSCRIBE_AUDIO_UPLOAD_REQUEST,
-    SUBSCRIBE_AUDIO_UPLOAD_COMPLETE,
-    SUBSCRIBE_CTRL_SERVER_RESULT,
-    SUBSCRIBE_CTRL_SENSOR_RESULT,
+    SUBSCRIBE_SERVER_INIT,
+    SUBSCRIBE_FORWARD_SENSOR_INIT,
+    SUBSCRIBE_REQUEST_UPLOAD_AUDIO,
+    SUBSCRIBE_UPLOAD_RESULT,
+    SUBSCRIBE_RESULT_PARAMETERS_SERVER,
+    SUBSCRIBE_RESULT_PARAMETERS_SENSOR,
 ]
 
 # ─── 발행 토픽 템플릿 (백엔드 Publish) ───────────────────────────────────────
-# 사용 예: PUBLISH_EDGE_SERVER_REGISTER_RESULT.format(edge_server_id="abc")
+# 사용 예: PUBLISH_REGISTER_SERVER.format(server_id="abc")
 
-PUBLISH_EDGE_SERVER_REGISTER_RESULT  = "signalcraft/edge/{edge_server_id}/register/result"
-PUBLISH_EDGE_SENSOR_REGISTER_RESULT  = "signalcraft/edge/{edge_server_id}/sensor/{sensor_id}/register/result"
-PUBLISH_AUDIO_UPLOAD_URL             = "signalcraft/edge/{edge_server_id}/audio/upload/url"
-PUBLISH_CTRL_SERVER                  = "signalcraft/edge/{edge_server_id}/ctrl/server"
-PUBLISH_CTRL_SENSOR                  = "signalcraft/edge/{edge_server_id}/ctrl/sensor/{sensor_id}"
+PUBLISH_REGISTER_SERVER              = "signalcraft/register_server/cloud/{server_id}"
+PUBLISH_REGISTER_SENSOR              = "signalcraft/register_sensor/cloud/{server_id}"
+PUBLISH_UPLOAD_AUDIO_URL             = "signalcraft/upload_audio_url/cloud/{server_id}"
+PUBLISH_CTRL_PARAMETERS_SERVER       = "signalcraft/control_parameters_server/cloud/{server_id}"
+PUBLISH_CTRL_PARAMETERS_SENSOR       = "signalcraft/control_parameters_sensor/cloud/{server_id}"

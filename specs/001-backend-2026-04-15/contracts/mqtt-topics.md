@@ -8,11 +8,12 @@ README.md 시나리오 테이블의 각 MQTT 단계에 1:1 대응한다.
 ## 토픽 네임스페이스 규칙
 
 ```
-signalcraft/edge/{edge_server_id}/...
+signalcraft/{action}/{server_id}/cloud        # Subscribe (엣지 → 백엔드)
+signalcraft/{action}/cloud/{server_id}        # Publish  (백엔드 → 엣지)
 ```
 
-- `{edge_server_id}`: 엣지 서버의 device_id (URL-safe string)
-- `{sensor_id}`: 엣지 센서의 device_id
+- `{server_id}`: 엣지 서버의 device_id (URL-safe string)
+- `+`: MQTT 단일 레벨 와일드카드 (구독 시 사용)
 
 ---
 
@@ -22,7 +23,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/register` |
+| 토픽 | `signalcraft/server_init/{server_id}/cloud` |
 | 방향 | 엣지 서버 → **백엔드** (Subscribe) |
 | QoS | 1 |
 
@@ -40,7 +41,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/register/result` |
+| 토픽 | `signalcraft/register_server/cloud/{server_id}` |
 | 방향 | **백엔드** (Publish) → 엣지 서버 |
 | QoS | 1 |
 
@@ -58,7 +59,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/sensor/{sensor_id}/register` |
+| 토픽 | `signalcraft/forward_sensor_init/{server_id}/cloud` |
 | 방향 | 엣지 서버 → **백엔드** (Subscribe) |
 | QoS | 1 |
 
@@ -76,7 +77,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/sensor/{sensor_id}/register/result` |
+| 토픽 | `signalcraft/register_sensor/cloud/{server_id}` |
 | 방향 | **백엔드** (Publish) → 엣지 서버 |
 | QoS | 1 |
 
@@ -97,7 +98,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/audio/upload/request` |
+| 토픽 | `signalcraft/request_upload_audio/{server_id}/cloud` |
 | 방향 | 엣지 서버 → **백엔드** (Subscribe) |
 | QoS | 1 |
 
@@ -115,7 +116,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/audio/upload/url` |
+| 토픽 | `signalcraft/upload_audio_url/cloud/{server_id}` |
 | 방향 | **백엔드** (Publish) → 엣지 서버 |
 | QoS | 1 |
 
@@ -134,7 +135,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/audio/upload/complete` |
+| 토픽 | `signalcraft/upload_result/{server_id}/cloud` |
 | 방향 | 엣지 서버 → **백엔드** (Subscribe) |
 | QoS | 1 |
 
@@ -155,7 +156,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/ctrl/server` |
+| 토픽 | `signalcraft/control_parameters_server/cloud/{server_id}` |
 | 방향 | **백엔드** (Publish) → 엣지 서버 |
 | QoS | 1 |
 
@@ -173,7 +174,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/ctrl/server/result` |
+| 토픽 | `signalcraft/result_parameters_server/{server_id}/cloud` |
 | 방향 | 엣지 서버 → **백엔드** (Subscribe) |
 | QoS | 1 |
 
@@ -194,7 +195,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/ctrl/sensor/{sensor_id}` |
+| 토픽 | `signalcraft/control_parameters_sensor/cloud/{server_id}` |
 | 방향 | **백엔드** (Publish) → 엣지 서버 |
 | QoS | 1 |
 
@@ -213,7 +214,7 @@ signalcraft/edge/{edge_server_id}/...
 
 | 항목 | 값 |
 |---|---|
-| 토픽 | `signalcraft/edge/{edge_server_id}/ctrl/sensor/{sensor_id}/result` |
+| 토픽 | `signalcraft/result_parameters_sensor/{server_id}/cloud` |
 | 방향 | 엣지 서버 → **백엔드** (Subscribe) |
 | QoS | 1 |
 
@@ -234,12 +235,12 @@ signalcraft/edge/{edge_server_id}/...
 백엔드가 클라우드 브로커에 Subscribe하는 토픽 목록:
 
 ```
-signalcraft/edge/+/register
-signalcraft/edge/+/sensor/+/register
-signalcraft/edge/+/audio/upload/request
-signalcraft/edge/+/audio/upload/complete
-signalcraft/edge/+/ctrl/server/result
-signalcraft/edge/+/ctrl/sensor/+/result
+signalcraft/server_init/+/cloud
+signalcraft/forward_sensor_init/+/cloud
+signalcraft/request_upload_audio/+/cloud
+signalcraft/upload_result/+/cloud
+signalcraft/result_parameters_server/+/cloud
+signalcraft/result_parameters_sensor/+/cloud
 ```
 
 (`+`는 MQTT 단일 레벨 와일드카드)
