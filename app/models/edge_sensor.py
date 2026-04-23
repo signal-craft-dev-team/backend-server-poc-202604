@@ -29,10 +29,10 @@ class EdgeSensor(Base):
     )
     device_name: Mapped[str] = mapped_column(String, nullable=False)
     sensor_type: Mapped[SensorType] = mapped_column(
-        Enum(SensorType, name="sensor_type", schema="service"),
-        nullable=False,
+        Enum(SensorType, name="sensortype", schema="service"), nullable=False,
     )
     sensor_position: Mapped[str | None] = mapped_column(String, nullable=True)
+    installation_machine: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, server_default=func.now()
     )

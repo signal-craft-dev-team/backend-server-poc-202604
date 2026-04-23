@@ -48,6 +48,8 @@ async def run(stop_event: asyncio.Event) -> None:
                 port=settings.mqtt_port,
                 username=settings.mqtt_user,
                 password=settings.mqtt_pwd,
+                identifier="signalcraft-backend",
+                clean_session=False,
             ) as client:
                 _client = client
                 _mqtt_connected = True

@@ -6,10 +6,10 @@ MQTT 메시지 페이로드 Pydantic 스키마.
   - Outbound : 백엔드가 Publish  하는 메시지 (백엔드 → 엣지)
 """
 
-import uuid
-
 from pydantic import BaseModel, Field
-
+import uuid
+from app.models.edge_sensor import SensorType
+from app.models.edge_server import EdgeServerStatus
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 공통
@@ -26,16 +26,16 @@ class ResultStatus(str):
 
 class EdgeServerRegisterRequest(BaseModel):
     """NEW-001 | SUBSCRIBE | 엣지 서버 → 백엔드
-    토픽: signalcraft/edge/{edge_server_id}/register
+    토픽: signalcraft/server_init/{server_id}/cloud
     """
-    server_id: uuid.UUID = Field(..., description="엣지 서버 고유 식별자")
-    installation_place: str | None = Field(None, description="설치 위치 설명")
+    server_id: str = Field(..., description="엣지 서버 고유 식별자")
+    installation_machine: str | None = Field(None, description="설치 장비(혹은 위치) 설명")
     timezone: str | None = Field(None, description="현장 타임존 (예: Asia/Seoul)")
 
 
 class EdgeServerRegisterResult(BaseModel):
     """NEW-002 | PUBLISH | 백엔드 → 엣지 서버
-    토픽: signalcraft/edge/{edge_server_id}/register/result
+    토픽: signalcraft/register_server/cloud/{server_id}
     """
     status: str = Field(..., description="success | failed")
     message: str | None = Field(None, description="실패 시 사유 등 부가 메시지")
@@ -43,18 +43,89 @@ class EdgeServerRegisterResult(BaseModel):
 
 class EdgeSensorRegisterRequest(BaseModel):
     """NEW-004 | SUBSCRIBE | 엣지 서버 → 백엔드 (센서 등록 중계)
-    토픽: signalcraft/edge/{edge_server_id}/sensor/{sensor_id}/register
+    토픽: signalcraft/forward_sensor_init/{server_id}/cloud
+    edge_server_id는 토픽의 server_id로 DB 조회하여 획득 (payload 불필요)
     """
-    edge_server_id: uuid.UUID = Field(..., description="요청을 중계한 엣지 서버의 DB id")
-    device_name: str = Field(..., description="엣지 센서 장치명")
-    sensor_type: str = Field(..., description="MICROPHONE | ACCELEROMETER | THERMOMETER")
+    device_name: str | None = Field(None, description="엣지 센서 장치명")
+    sensor_type: str | None = Field(None, description="MICROPHONE | ACCELEROMETER | THERMOMETER")
     sensor_position: str | None = Field(None, description="센서 부착 위치")
+    installation_machine: str | None = Field(None, description="센서가 설치된 장비명")
 
 
 class EdgeSensorRegisterResult(BaseModel):
     """NEW-005 | PUBLISH | 백엔드 → 엣지 서버 (센서 등록 결과)
-    토픽: signalcraft/edge/{edge_server_id}/sensor/{sensor_id}/register/result
+    토픽: signalcraft/register_sensor/cloud/{server_id}
     """
     status: str = Field(..., description="success | failed")
     device_name: str = Field(..., description="등록 처리된 센서 장치명")
     message: str | None = Field(None, description="실패 시 사유 등 부가 메시지")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CTRL 시나리오 — 파라미터 제어 결과
+# ─────────────────────────────────────────────────────────────────────────────
+
+class CtrlServerResultPayload(BaseModel):
+    """CTRL-SERVER-002 | SUBSCRIBE | 엣지 서버 → 백엔드
+    토픽: signalcraft/result_parameters_server/{server_id}/cloud
+    """
+    status: str = Field(..., description="success | failed")
+    message: str | None = Field(None, description="실패 시 사유")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# API 시나리오
+# ─────────────────────────────────────────────────────────────────────────────
+
+class UpdateServerParametersRequest(BaseModel):
+    model_config = {"json_schema_extra": {"examples": [
+        {
+            "server_id": "test-server-0001",
+            "server_status": "ONLINE",
+            "capture_duration_ms": 5000,
+            "timezone": "Asia/Seoul",
+            "installation_machine": "raspberry-pi-4",
+            "upload_interval_ms": 60000,
+            "active_hours_start": "08:00",
+            "active_hours_end": "22:00",
+        }
+    ]}}
+
+    server_id: str
+    place_id: uuid.UUID | None = None
+    server_status: EdgeServerStatus | None = None
+    capture_duration_ms: int | None = None
+    timezone: str | None = None
+    installation_machine: str | None = None
+    upload_interval_ms: int | None = None
+    active_hours_start: str | None = None
+    active_hours_end: str | None = None
+
+
+class UpdateServerParametersResponse(BaseModel):
+    status: str
+    server_id: str
+    mqtt_published: bool
+
+
+class UpdateSensorParametersRequest(BaseModel):
+    model_config = {"json_schema_extra": {"examples": [
+        {
+            "server_id": "test-server-0001",
+            "device_name": "mic-1000",
+            "sensor_type": "MICROPHONE",
+            "sensor_position": "천장 좌측",
+            "installation_machine": "밀링 머신",
+        }
+    ]}}
+
+    server_id: str
+    device_name: str
+    sensor_type: SensorType | None = None
+    sensor_position: str | None = None
+    installation_machine: str | None = None
+
+
+class UpdateSensorParametersResponse(BaseModel):
+    status: str
+    server_id: str
+    device_name: str
