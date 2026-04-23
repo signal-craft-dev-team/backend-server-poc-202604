@@ -4,8 +4,9 @@ import logging
 import aiomqtt
 
 from app.db.mongo import insert_error_log, insert_sensor_status_log, insert_server_status_log
-from app.models.schemas import CtrlServerResultPayload, EdgeSensorRegisterRequest, EdgeServerRegisterRequest
-from app.mqtt.publish import publish_register_sensor, publish_register_server
+from app.models.schemas import AudioUploadResult, CtrlServerResultPayload, EdgeSensorRegisterRequest, EdgeServerRegisterRequest
+from app.mqtt.publish import publish_register_sensor, publish_register_server, publish_upload_audio_url
+from app.services.audio import check_upload_anomaly, issue_presigned_url, record_upload_result
 from app.mqtt.topics import (
     SUBSCRIBE_FORWARD_SENSOR_INIT,
     SUBSCRIBE_REQUEST_UPLOAD_AUDIO,
@@ -133,12 +134,76 @@ async def handle_sensor_init(topic: str, payload: dict) -> None:
 
 async def handle_audio_upload_request(topic: str, payload: dict) -> None:
     """AUDIO-005 | signalcraft/request_upload_audio/{server_id}/cloud"""
-    pass
+    server_id_str = topic.split("/")[2]
+
+    if await check_upload_anomaly(server_id_str):
+        await insert_error_log(
+            event="upload_missing",
+            server_id=server_id_str,
+            error="Upload interval exceeded 3x threshold during active hours",
+            attempts=0,
+        )
+        logger.warning("[MQTT] Upload anomaly detected: %s", server_id_str)
+
+    try:
+        gcs_path, presigned_url, expires_at = await issue_presigned_url(server_id_str)
+    except Exception as exc:
+        await insert_error_log(
+            event="presigned_url_failed",
+            server_id=server_id_str,
+            error=str(exc),
+            attempts=1,
+        )
+        logger.error("[MQTT] Presigned URL generation failed: %s | %s", server_id_str, exc)
+        return
+
+    try:
+        await publish_upload_audio_url(
+            server_id_str,
+            {"presigned_url": presigned_url, "gcs_path": gcs_path, "expires_at": expires_at},
+        )
+        logger.info("[MQTT] Presigned URL issued: %s → %s", server_id_str, gcs_path)
+    except Exception as exc:
+        logger.warning("[MQTT] URL issued but publish failed for %s: %s", server_id_str, exc)
 
 
 async def handle_upload_result(topic: str, payload: dict) -> None:
     """AUDIO-010 | signalcraft/upload_result/{server_id}/cloud"""
-    pass
+    server_id_str = topic.split("/")[2]
+
+    try:
+        result = AudioUploadResult(**payload)
+    except Exception as exc:
+        logger.error("[MQTT] Invalid upload_result payload: %s", exc)
+        return
+
+    try:
+        await record_upload_result(
+            gcs_path=result.gcs_path,
+            status=result.status,
+            sensor_map=result.sensor_map,
+            message=result.message,
+        )
+    except Exception as exc:
+        await insert_error_log(
+            event="audio_record_update_failed",
+            server_id=server_id_str,
+            error=str(exc),
+            attempts=1,
+        )
+        logger.error("[MQTT] Failed to update audio record: %s | %s", server_id_str, exc)
+        return
+
+    if result.status == "failed":
+        await insert_error_log(
+            event="audio_upload_failed",
+            server_id=server_id_str,
+            error=result.message or "No message provided",
+            attempts=1,
+        )
+        logger.warning("[MQTT] Audio upload failed: %s | %s", server_id_str, result.gcs_path)
+    else:
+        logger.info("[MQTT] Audio upload success: %s → %s", server_id_str, result.gcs_path)
 
 
 async def handle_result_parameters_server(topic: str, payload: dict) -> None:

@@ -61,6 +61,37 @@ class EdgeSensorRegisterResult(BaseModel):
     message: str | None = Field(None, description="실패 시 사유 등 부가 메시지")
 
 # ─────────────────────────────────────────────────────────────────────────────
+# AUDIO 시나리오 — 오디오 수집
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AudioUploadRequest(BaseModel):
+    """AUDIO-005 | SUBSCRIBE | 엣지 서버 → 백엔드
+    토픽: signalcraft/request_upload_audio/{server_id}/cloud
+    페이로드 없음 — server_id는 토픽에서 추출
+    """
+    pass
+
+
+class AudioUrlPayload(BaseModel):
+    """AUDIO-007 | PUBLISH | 백엔드 → 엣지 서버
+    토픽: signalcraft/upload_audio_url/cloud/{server_id}
+    """
+    presigned_url: str = Field(..., description="GCS PUT Presigned URL")
+    gcs_path: str = Field(..., description="GCS 오브젝트 경로")
+    expires_at: str = Field(..., description="URL 만료 시각 (ISO8601)")
+
+
+class AudioUploadResult(BaseModel):
+    """AUDIO-010 | SUBSCRIBE | 엣지 서버 → 백엔드
+    토픽: signalcraft/upload_result/{server_id}/cloud
+    """
+    gcs_path: str = Field(..., description="업로드된 GCS 경로")
+    status: str = Field(..., description="success | failed")
+    message: str | None = Field(None, description="실패 시 사유")
+    sensor_map: list[str] = Field(default_factory=list, description="녹음된 센서 device_name 목록")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # CTRL 시나리오 — 파라미터 제어 결과
 # ─────────────────────────────────────────────────────────────────────────────
 

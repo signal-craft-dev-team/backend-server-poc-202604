@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import socket
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -48,7 +49,7 @@ async def run(stop_event: asyncio.Event) -> None:
                 port=settings.mqtt_port,
                 username=settings.mqtt_user,
                 password=settings.mqtt_pwd,
-                identifier="signalcraft-backend",
+                identifier=f"signalcraft-backend-{socket.gethostname()}",
                 clean_session=False,
             ) as client:
                 _client = client
