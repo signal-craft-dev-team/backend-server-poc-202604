@@ -54,6 +54,22 @@
 | CTRL-SENSOR-003 | 송신 결과 전달 | MQTT | 엣지 센서 | 엣지 서버 | X |
 | CTRL-SENSOR-004 | 송신 결과 전달 | MQTT | 엣지 서버 | 백엔드 | X |
 
+## 상태별 분류(연결 상태 - LWT)
+MQTT LWT(Last Will and Testament) 기반 디바이스 연결 상태 감지
+
+| 상태 번호 | 시나리오 | 통신방식 | 브로커 | 송신자 | 수신자 |
+|---|---|---|---|---|---|
+| LWT-001 | 엣지 서버 비정상 종료 감지 | MQTT (LWT) | 클라우드 | 브로커 자동 발행 | 백엔드 |
+| LWT-002 | 엣지 서버 재연결 알림 | MQTT (Birth) | 클라우드 | 엣지 서버 | 백엔드 |
+| LWT-003 | 엣지 센서 비정상 종료 감지 | MQTT (LWT) | 로컬 | 브로커 자동 발행 | 엣지 서버 |
+| LWT-004 | 엣지 센서 재연결 알림 | MQTT (Birth) | 로컬 | 엣지 센서 | 엣지 서버 |
+| LWT-005 | 엣지 서버 비정상 종료 감지 (로컬) | MQTT (LWT) | 로컬 | 브로커 자동 발행 | 엣지 센서 |
+| LWT-006 | 엣지 서버 재연결 알림 (로컬) | MQTT (Birth) | 로컬 | 엣지 서버 | 엣지 센서 |
+
+> LWT: 비정상 종료(전원 차단, 네트워크 단절 등) 시 브로커가 자동 발행<br>
+> Birth: 클라이언트가 재연결 후 직접 publish하는 ONLINE 알림<br>
+> LWT-003~006은 로컬 브로커에서 처리되며 백엔드와 무관 — 엣지 서버가 자체 재연결 처리
+
 ## MQTT 토픽 정리
 
 ## 기본구조
@@ -78,6 +94,8 @@ signalcraft/{토픽내용}/{송신위치}/{수신위치}
 | AUDIO-002 오디오 데이터 요청 | 엣지 서버 → 엣지 센서 | `signalcraft/request_audio/{server_id}/{sensor_id}` | 1 |
 | CTRL-SENSOR-002 센서로 파라미터 송신 | 엣지 서버 → 엣지 센서 | `signalcraft/control_parameters/{server_id}/{sensor_id}` | 1 |
 | CTRL-SENSOR-003 센서 제어 결과 전달 | 엣지 센서 → 엣지 서버 | `signalcraft/result_parameters/{sensor_id}/{server_id}` | 1 |
+| LWT-003/004 센서 연결 상태 | 엣지 센서 → 엣지 서버 | `signalcraft/lwt/{sensor_id}/{server_id}` | 1 |
+| LWT-005/006 엣지 서버 연결 상태 | 엣지 서버 → 엣지 센서 | `signalcraft/lwt/{server_id}/{sensor_id}` | 1 |
 
 > AUDIO-003/004 (오디오 데이터 송수신)는 HTTP로 처리 — MQTT 토픽 없음
 
@@ -98,5 +116,6 @@ signalcraft/{토픽내용}/{송신위치}/{수신위치}
 | CTRL-SERVER-002 서버 제어 결과 전달 | 엣지 서버 → 백엔드 | `signalcraft/result_parameters_server/{server_id}/cloud` | 1 |
 | CTRL-SENSOR-001 센서 파라미터 송신 | 백엔드 → 엣지 서버 | `signalcraft/control_parameters_sensor/cloud/{server_id}` | 1 |
 | CTRL-SENSOR-004 센서 제어 결과 전달 | 엣지 서버 → 백엔드 | `signalcraft/result_parameters_sensor/{server_id}/cloud` | 1 |
+| LWT-001/002 엣지 서버 연결 상태 | 엣지 서버 → 백엔드 | `signalcraft/lwt/{server_id}/cloud` | 1 |
 
 ---

@@ -3,19 +3,12 @@ import logging
 
 import aiomqtt
 
-from app.db.mongo import insert_error_log, insert_sensor_status_log, insert_server_status_log
-from app.models.schemas import AudioUploadResult, CtrlServerResultPayload, EdgeSensorRegisterRequest, EdgeServerRegisterRequest
+from app.db.mongo import insert_error_log, insert_sensor_status_log
+from app.models.schemas import AudioUploadResult, CtrlServerResultPayload, EdgeSensorRegisterRequest, EdgeServerRegisterRequest, EdgeServerStatus
 from app.mqtt.publish import publish_register_sensor, publish_register_server, publish_upload_audio_url
 from app.services.audio import check_upload_anomaly, issue_presigned_url, record_upload_result
-from app.mqtt.topics import (
-    SUBSCRIBE_FORWARD_SENSOR_INIT,
-    SUBSCRIBE_REQUEST_UPLOAD_AUDIO,
-    SUBSCRIBE_RESULT_PARAMETERS_SENSOR,
-    SUBSCRIBE_RESULT_PARAMETERS_SERVER,
-    SUBSCRIBE_SERVER_INIT,
-    SUBSCRIBE_UPLOAD_RESULT,
-)
 from app.services.registration import register_edge_sensor, register_edge_server
+from app.services.update import update_edge_server
 from app.utils.retry import async_retry
 
 logger = logging.getLogger(__name__)
@@ -44,6 +37,7 @@ async def dispatch(message: aiomqtt.Message) -> None:
         case "upload_result":             await handle_upload_result(topic, payload)
         case "result_parameters_server":  await handle_result_parameters_server(topic, payload)
         case "result_parameters_sensor":  await handle_result_parameters_sensor(topic, payload)
+        case "lwt":                       await handle_lwt(topic, payload)
         case _:                           logger.warning("[MQTT] Unhandled topic: %s", topic)
 
 
@@ -59,13 +53,9 @@ async def handle_server_init(topic: str, payload: dict) -> None:
         return
 
     try:
-        server = await async_retry(
+        await async_retry(
             lambda: register_edge_server(server_id_str, req.timezone, req.installation_machine),
             max_attempts=3,
-        )
-        await insert_server_status_log(
-            server_id=server_id_str,
-            server_status=server.server_status.value,
         )
     except Exception as exc:
         await insert_error_log(
@@ -231,3 +221,19 @@ async def handle_result_parameters_server(topic: str, payload: dict) -> None:
 async def handle_result_parameters_sensor(topic: str, payload: dict) -> None:
     """CTRL-SENSOR-004 | signalcraft/result_parameters_sensor/{server_id}/cloud"""
     pass
+
+async def handle_lwt(topic: str, payload: dict) -> None:
+    """LWT-001/002 | signalcraft/lwt/{server_id}/cloud"""
+    server_id_str = topic.split("/")[2]
+    status_str = payload.get("status", "").upper()
+
+    if status_str not in ("ONLINE", "OFFLINE"):
+        logger.warning("[MQTT] Unknown LWT status: %s | %s", server_id_str, status_str)
+        return
+
+    status = EdgeServerStatus.ONLINE if status_str == "ONLINE" else EdgeServerStatus.OFFLINE
+    server = await update_edge_server(server_id_str, server_status=status)                                                                       
+    if server is None:
+        logger.warning("[MQTT] LWT received for unknown server: %s", server_id_str)                                                                  
+        return
+    logger.info("[MQTT] LWT status update: %s → %s", server_id_str, status.value)

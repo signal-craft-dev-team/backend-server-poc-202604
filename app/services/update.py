@@ -70,7 +70,6 @@ async def update_edge_server(
 
         return server
 
-
 async def update_edge_sensor(
     server_id: str,
     device_name: str,
