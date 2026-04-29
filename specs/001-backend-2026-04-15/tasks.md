@@ -246,6 +246,64 @@ MongoDB `ctrl_result_logs`에 레코드 확인
 
 ---
 
+## Phase 8: 사용자용 Web API (`app/api/user_api.py`)
+
+**Goal**: 고객/현장 관리 및 SQL·MongoDB 로그 조회를 위한 사용자용 REST API를 구현한다.
+MQTT 워커와 같은 인스턴스를 사용하되, 별도 라우터 파일로 명확히 분리한다.
+
+**라우터 분리 구조**:
+```
+app/api/
+├── web_api.py    ← 엣지 관리용 (MQTT 연동, 현재)
+└── user_api.py   ← 사용자용 (customer/place/log 조회, Phase 8)
+```
+
+**엔드포인트 설계**:
+
+| Method | Path | 역할 |
+|--------|------|------|
+| POST | `/api/v1/user/customers` | 고객 생성 |
+| GET | `/api/v1/user/customers` | 고객 목록 |
+| POST | `/api/v1/user/places` | 현장 생성 |
+| GET | `/api/v1/user/places` | 현장 목록 |
+| GET | `/api/v1/user/servers` | 엣지 서버 목록 + 상태 |
+| GET | `/api/v1/user/servers/{server_id}/sensors` | 서버별 센서 목록 |
+| POST | `/api/v1/user/servers/{server_id}/assign-place` | 서버에 현장 연결 |
+| GET | `/api/v1/user/logs/errors` | MongoDB error_logs 조회 |
+| GET | `/api/v1/user/logs/server-status` | MongoDB server_status_logs 조회 |
+| GET | `/api/v1/user/logs/sensor-status` | MongoDB sensor_status_logs 조회 |
+| GET | `/api/v1/user/logs/audio` | MongoDB audio_upload_logs 조회 |
+| GET | `/api/v1/user/logs/ctrl` | MongoDB ctrl_result_logs 조회 |
+
+**공통 쿼리 파라미터** (로그 조회): `server_id: str | None`, `limit: int = 50`
+
+**Checkpoint**: `/docs`에서 전체 엔드포인트 확인 + 고객 생성 → 현장 생성 → 서버 연결 플로우 검증
+
+### Implementation
+
+- [ ] T801 [P] `app/models/schemas.py` 업데이트 — 사용자 API 스키마 추가:
+  - `CreateCustomerRequest`: `customer_name: str`, `contact_email: str | None`, `contact_phone: str | None`
+  - `CreatePlaceRequest`: `customer_id: uuid.UUID`, `place_name: str`, `place_address: str | None`
+  - `AssignPlaceRequest`: `place_id: uuid.UUID`
+  - `LogQueryResponse`: `data: list[dict]`, `count: int`
+- [ ] T802 [P] `app/services/management.py` 생성 — SQL CRUD 서비스:
+  - `create_customer(customer_name, contact_email, contact_phone)` → `Customer`
+  - `list_customers()` → `list[Customer]`
+  - `create_place(customer_id, place_name, place_address)` → `Place`
+  - `list_places()` → `list[Place]`
+  - `list_edge_servers()` → `list[EdgeServer]`
+  - `list_edge_sensors(server_id_str)` → `list[EdgeSensor]`
+  - `assign_place_to_server(server_id_str, place_id)` → `EdgeServer | None`
+- [ ] T803 [P] `app/db/mongo.py` 업데이트 — 로그 조회 헬퍼 추가:
+  - `query_logs(collection, server_id, limit)` → `list[dict]`: 공통 조회 함수 (server_id 필터 + limit + timestamp 역순 정렬, ObjectId 제거)
+- [ ] T804 `app/api/user_api.py` 생성 — 사용자용 라우터 (`prefix="/api/v1/user"`):
+  - 고객/현장 생성·조회 엔드포인트 (T802 서비스 호출)
+  - 서버·센서 조회 및 현장 연결 엔드포인트
+  - 로그 조회 5개 엔드포인트 (T803 헬퍼 호출, `?server_id=&limit=`)
+- [ ] T805 `app/main.py` 업데이트 — `app.include_router(user_router)` 등록
+
+---
+
 ## Phase N: Polish & Cross-Cutting Concerns
 
 **Purpose**: 운영 및 개발 환경 완성도 향상

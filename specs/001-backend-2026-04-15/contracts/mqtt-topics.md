@@ -230,6 +230,25 @@ signalcraft/{action}/cloud/{server_id}        # Publish  (백엔드 → 엣지)
 
 ---
 
+## 연결 상태 (LWT)
+
+### LWT-001/002 — 엣지 서버 연결 상태
+
+| 항목 | 값 |
+|---|---|
+| 토픽 | `signalcraft/lwt/{server_id}/cloud` |
+| 방향 | 엣지 서버 → **백엔드** (Subscribe) |
+| QoS | 1 |
+
+**Payload**:
+```json
+{ "status": "OFFLINE" }
+```
+> LWT-001: 비정상 종료 시 브로커가 자동 발행 (`status: OFFLINE`)<br>
+> LWT-002: 재연결 후 엣지 서버가 직접 발행 (`status: ONLINE`, Birth Message)
+
+---
+
 ## 백엔드 구독 토픽 요약
 
 백엔드가 클라우드 브로커에 Subscribe하는 토픽 목록:
@@ -241,6 +260,7 @@ signalcraft/request_upload_audio/+/cloud
 signalcraft/upload_result/+/cloud
 signalcraft/result_parameters_server/+/cloud
 signalcraft/result_parameters_sensor/+/cloud
+signalcraft/lwt/+/cloud
 ```
 
 (`+`는 MQTT 단일 레벨 와일드카드)

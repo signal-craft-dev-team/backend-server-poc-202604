@@ -7,6 +7,7 @@ SUBSCRIBE_REQUEST_UPLOAD_AUDIO         = "signalcraft/request_upload_audio/+/clo
 SUBSCRIBE_UPLOAD_RESULT                = "signalcraft/upload_result/+/cloud"
 SUBSCRIBE_RESULT_PARAMETERS_SERVER     = "signalcraft/result_parameters_server/+/cloud"
 SUBSCRIBE_RESULT_PARAMETERS_SENSOR     = "signalcraft/result_parameters_sensor/+/cloud"
+SUBSCRIBE_LWT                          = "signalcraft/lwt/+/cloud"
 
 ALL_SUBSCRIBE_TOPICS = [
     SUBSCRIBE_SERVER_INIT,
@@ -15,6 +16,7 @@ ALL_SUBSCRIBE_TOPICS = [
     SUBSCRIBE_UPLOAD_RESULT,
     SUBSCRIBE_RESULT_PARAMETERS_SERVER,
     SUBSCRIBE_RESULT_PARAMETERS_SENSOR,
+    SUBSCRIBE_LWT
 ]
 
 # ─── 발행 토픽 템플릿 (백엔드 Publish) ───────────────────────────────────────

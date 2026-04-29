@@ -1,5 +1,6 @@
 from sqlalchemy import select
 
+from app.db.mongo import insert_server_status_log
 from app.db.sql import AsyncSessionFactory
 from app.models.edge_sensor import EdgeSensor, SensorType
 from app.models.edge_server import EdgeServer, EdgeServerStatus
@@ -27,11 +28,16 @@ async def register_edge_server(server_id: str, timezone: str | None, installatio
                 active_hours_end="23:59",
             )
             session.add(server)
+            await session.commit()
+            await insert_server_status_log(server_id=server_id, server_status=EdgeServerStatus.ONLINE.value)
         else:
+            prev_status = server.server_status
             server.server_status = EdgeServerStatus.ONLINE
             server.updated_at = kst_now()
+            await session.commit()
+            if prev_status != EdgeServerStatus.ONLINE:
+                await insert_server_status_log(server_id=server_id, server_status=EdgeServerStatus.ONLINE.value)
 
-        await session.commit()
         return server
 
 
