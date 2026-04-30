@@ -5,7 +5,7 @@ import aiomqtt
 
 from app.db.mongo import insert_edge_alert_log, insert_error_log, insert_sensor_status_log
 from app.models.schemas import AudioUploadResult, CtrlServerResultPayload, EdgeAlertPayload, EdgeSensorRegisterRequest, EdgeServerRegisterRequest, EdgeServerStatus
-from app.mqtt.publish import publish_register_sensor, publish_register_server, publish_upload_audio_url
+from app.mqtt.publish import publish_ctrl_parameters_server, publish_register_sensor, publish_register_server, publish_upload_audio_url
 from app.services.audio import check_upload_anomaly, issue_presigned_url, record_upload_result
 from app.services.registration import register_edge_sensor, register_edge_server
 from app.services.update import update_edge_server
@@ -71,7 +71,7 @@ async def handle_server_init(topic: str, payload: dict) -> None:
         return
 
     try:
-        await async_retry(
+        server = await async_retry(
             lambda: register_edge_server(server_id_str, req.timezone, req.installation_machine),
             max_attempts=3,
         )
@@ -90,6 +90,20 @@ async def handle_server_init(topic: str, payload: dict) -> None:
         logger.info("[MQTT] Server registered: %s", server_id_str)
     except Exception as exc:
         logger.warning("[MQTT] Registration OK but publish failed for %s: %s", server_id_str, exc)
+
+    params = {k: v for k, v in {
+        "capture_duration_ms": server.capture_duration_ms,
+        "upload_interval_ms": server.upload_interval_ms,
+        "timezone": server.timezone,
+        "active_hours_start": server.active_hours_start,
+        "active_hours_end": server.active_hours_end,
+    }.items() if v is not None}
+    if params:
+        try:
+            await publish_ctrl_parameters_server(server_id_str, params)
+            logger.info("[MQTT] Parameter restore published: %s", server_id_str)
+        except Exception as exc:
+            logger.warning("[MQTT] Parameter restore publish failed for %s: %s", server_id_str, exc)
 
 
 async def handle_sensor_init(topic: str, payload: dict) -> None:
