@@ -3,8 +3,8 @@ import logging
 
 import aiomqtt
 
-from app.db.mongo import insert_error_log, insert_sensor_status_log
-from app.models.schemas import AudioUploadResult, CtrlServerResultPayload, EdgeSensorRegisterRequest, EdgeServerRegisterRequest, EdgeServerStatus
+from app.db.mongo import insert_edge_alert_log, insert_error_log, insert_sensor_status_log
+from app.models.schemas import AudioUploadResult, CtrlServerResultPayload, EdgeAlertPayload, EdgeSensorRegisterRequest, EdgeServerRegisterRequest, EdgeServerStatus
 from app.mqtt.publish import publish_register_sensor, publish_register_server, publish_upload_audio_url
 from app.services.audio import check_upload_anomaly, issue_presigned_url, record_upload_result
 from app.services.registration import register_edge_sensor, register_edge_server
@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 async def dispatch(message: aiomqtt.Message) -> None:
     topic = str(message.topic)
-    parts = topic.split("/")  # ["signalcraft", "{action}", "{server_id}", "cloud"]
+    parts = topic.split("/")
 
-    if len(parts) != 4 or parts[0] != "signalcraft" or parts[-1] != "cloud":
+    if len(parts) != 4 or parts[0] != "signalcraft":
         logger.warning("[MQTT] Unexpected topic format: %s", topic)
         return
 
@@ -30,15 +30,33 @@ async def dispatch(message: aiomqtt.Message) -> None:
         logger.warning("[MQTT] Non-JSON payload on topic %s", topic)
         return
 
+    # alert topic: signalcraft/cloud/{server_id}/alert
+    if parts[1] == "cloud" and parts[3] == "alert":
+        await handle_alert(topic, payload)
+        return
+
+    # existing subscribe topics: signalcraft/{action}/{server_id}/cloud
+    if parts[3] != "cloud":
+        logger.warning("[MQTT] Unexpected topic format: %s", topic)
+        return
+
     match parts[1]:
-        case "server_init":               await handle_server_init(topic, payload)
-        case "forward_sensor_init":       await handle_sensor_init(topic, payload)
-        case "request_upload_audio":      await handle_audio_upload_request(topic, payload)
-        case "upload_result":             await handle_upload_result(topic, payload)
-        case "result_parameters_server":  await handle_result_parameters_server(topic, payload)
-        case "result_parameters_sensor":  await handle_result_parameters_sensor(topic, payload)
-        case "lwt":                       await handle_lwt(topic, payload)
-        case _:                           logger.warning("[MQTT] Unhandled topic: %s", topic)
+        case "server_init":
+            await handle_server_init(topic, payload)
+        case "forward_sensor_init":
+            await handle_sensor_init(topic, payload)
+        case "request_upload_audio":
+            await handle_audio_upload_request(topic, payload)
+        case "upload_result":
+            await handle_upload_result(topic, payload)
+        case "result_parameters_server":
+            await handle_result_parameters_server(topic, payload)
+        case "result_parameters_sensor":
+            await handle_result_parameters_sensor(topic, payload)
+        case "lwt":
+            await handle_lwt(topic, payload)
+        case _:
+            logger.warning("[MQTT] Unhandled topic: %s", topic)
 
 
 # ─── 핸들러 ───────────────────────────────────────────────────────────────────
@@ -221,6 +239,33 @@ async def handle_result_parameters_server(topic: str, payload: dict) -> None:
 async def handle_result_parameters_sensor(topic: str, payload: dict) -> None:
     """CTRL-SENSOR-004 | signalcraft/result_parameters_sensor/{server_id}/cloud"""
     pass
+
+
+async def handle_alert(topic: str, payload: dict) -> None:
+    """ALERT | signalcraft/cloud/{server_id}/alert"""
+    server_id_str = topic.split("/")[2]
+
+    try:
+        alert = EdgeAlertPayload(**payload)
+    except Exception as exc:
+        logger.error("[MQTT] Invalid alert payload: %s", exc)
+        return
+
+    await insert_edge_alert_log(
+        server_id=server_id_str,
+        level=alert.level,
+        event=alert.event,
+        edge_timestamp=alert.timestamp,
+        detail=alert.detail,
+    )
+    logger.log(
+        logging.ERROR if alert.level == "error" else logging.WARNING if alert.level == "warning" else logging.INFO,
+        "[MQTT] Alert from %s: [%s] %s%s",
+        server_id_str,
+        alert.event,
+        alert.level,
+        f" | {alert.detail}" if alert.detail else "",
+    )
 
 async def handle_lwt(topic: str, payload: dict) -> None:
     """LWT-001/002 | signalcraft/lwt/{server_id}/cloud"""

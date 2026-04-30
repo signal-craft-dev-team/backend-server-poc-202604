@@ -101,6 +101,24 @@ async def insert_audio_upload_log(server_id: str, gcs_path: str) -> None:
     await get_db()["audio_upload_logs"].insert_one(doc)
 
 
+async def insert_edge_alert_log(
+    server_id: str,
+    level: str,
+    event: str,
+    edge_timestamp: str,
+    detail: str | None = None,
+) -> None:
+    doc = {
+        "server_id": server_id,
+        "level": level,
+        "event": event,
+        "detail": detail,
+        "edge_timestamp": edge_timestamp,
+        "received_at": kst_now(),
+    }
+    await get_db()["error_logs"].insert_one(doc)
+
+
 async def update_audio_upload_log(
     gcs_path: str,
     status: str,
