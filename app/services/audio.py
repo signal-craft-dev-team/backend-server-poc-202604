@@ -65,14 +65,26 @@ async def check_upload_anomaly(server_id: str) -> bool:
 
 
 async def record_upload_result(
-    gcs_path: str,
+    server_id: str,
     status: str,
-    sensor_map: list[str],
+    sensor_map: dict[str, str],
     message: str | None = None,
 ) -> None:
-    """업로드 결과를 audio_upload_logs에 기록한다."""
+    """업로드 결과를 audio_upload_logs에 기록한다.
+
+    엣지가 gcs_path를 반환하지 않으므로 server_id로 최신 pending 문서를 조회한다.
+    """
+    from app.db.mongo import get_db  # noqa: PLC0415
+
+    record = await get_db()["audio_upload_logs"].find_one(
+        {"server_id": server_id, "status": "pending"},
+        sort=[("presigned_url_issued_at", -1)],
+    )
+    if record is None:
+        raise ValueError(f"No pending upload log found for server_id={server_id}")
+
     await update_audio_upload_log(
-        gcs_path=gcs_path,
+        gcs_path=record["gcs_path"],
         status=status,
         sensor_map=sensor_map,
         message=message,

@@ -84,11 +84,12 @@ class AudioUrlPayload(BaseModel):
 class AudioUploadResult(BaseModel):
     """AUDIO-010 | SUBSCRIBE | 엣지 서버 → 백엔드
     토픽: signalcraft/upload_result/{server_id}/cloud
+    gcs_path는 페이로드에 없음 — server_id로 pending 문서 조회하여 획득
     """
-    gcs_path: str = Field(..., description="업로드된 GCS 경로")
-    status: str = Field(..., description="success | failed")
+    server_id: str = Field(..., description="엣지 서버 ID")
+    status: str = Field(..., description="SUCCESS | FAILED (대문자, 저장 시 소문자 정규화)")
     message: str | None = Field(None, description="실패 시 사유")
-    sensor_map: list[str] = Field(default_factory=list, description="녹음된 센서 device_name 목록")
+    sensor_map: dict[str, str] = Field(default_factory=dict, description="device_name → success|failed")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
