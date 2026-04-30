@@ -1,3 +1,5 @@
+from datetime import timezone as dt_timezone
+
 from sqlalchemy import select
 
 from app.db.mongo import insert_audio_upload_log, update_audio_upload_log
@@ -60,6 +62,8 @@ async def check_upload_anomaly(server_id: str) -> bool:
         return False
 
     last_upload_at = last_record["upload_completed_at"]
+    if last_upload_at.tzinfo is None:
+        last_upload_at = last_upload_at.replace(tzinfo=dt_timezone.utc)
     elapsed_ms = (now - last_upload_at).total_seconds() * 1000
     return elapsed_ms > 3 * server.upload_interval_ms
 
