@@ -185,10 +185,12 @@ async def handle_upload_result(topic: str, payload: dict) -> None:
         logger.error("[MQTT] Invalid upload_result payload: %s", exc)
         return
 
+    status = result.status.lower()
+
     try:
         await record_upload_result(
-            gcs_path=result.gcs_path,
-            status=result.status,
+            server_id=server_id_str,
+            status=status,
             sensor_map=result.sensor_map,
             message=result.message,
         )
@@ -202,16 +204,16 @@ async def handle_upload_result(topic: str, payload: dict) -> None:
         logger.error("[MQTT] Failed to update audio record: %s | %s", server_id_str, exc)
         return
 
-    if result.status == "failed":
+    if status == "failed":
         await insert_error_log(
             event="audio_upload_failed",
             server_id=server_id_str,
             error=result.message or "No message provided",
             attempts=1,
         )
-        logger.warning("[MQTT] Audio upload failed: %s | %s", server_id_str, result.gcs_path)
+        logger.warning("[MQTT] Audio upload failed: %s", server_id_str)
     else:
-        logger.info("[MQTT] Audio upload success: %s → %s", server_id_str, result.gcs_path)
+        logger.info("[MQTT] Audio upload success: %s", server_id_str)
 
 
 async def handle_result_parameters_server(topic: str, payload: dict) -> None:

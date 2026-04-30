@@ -122,7 +122,7 @@ async def insert_edge_alert_log(
 async def update_audio_upload_log(
     gcs_path: str,
     status: str,
-    sensor_map: list[str],
+    sensor_map: dict[str, str],
     message: str | None = None,
 ) -> None:
     await get_db()["audio_upload_logs"].update_one(
