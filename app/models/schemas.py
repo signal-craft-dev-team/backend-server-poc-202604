@@ -92,6 +92,21 @@ class AudioUploadResult(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ALERT 시나리오 — 엣지 알림
+# ─────────────────────────────────────────────────────────────────────────────
+
+class EdgeAlertPayload(BaseModel):
+    """ALERT | SUBSCRIBE | 엣지 서버 → 백엔드
+    토픽: signalcraft/cloud/{server_id}/alert
+    server_id는 토픽에서 추출, 페이로드에는 없음
+    """
+    level: str = Field(..., description="info | warning | error")
+    event: str = Field(..., description="이벤트 코드 (SENSOR_OFFLINE 등)")
+    detail: str | None = Field(None, description="부가 정보, 없을 경우 생략됨")
+    timestamp: str = Field(..., description="엣지 UTC 기준 ISO 8601 타임스탬프")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # CTRL 시나리오 — 파라미터 제어 결과
 # ─────────────────────────────────────────────────────────────────────────────
 
